@@ -10,6 +10,7 @@
 #include <fstream>
 #include <algorithm>
 #include <atomic>
+#include <Python.h>
 
 #include <opencv2/core/version.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -36,11 +37,12 @@
 
 using namespace cv;
 
-class Tracking {
+class Tracking: public PyObject {
 private:
     std::unordered_map<int,int> timer;
     unsigned short frame = 0;
     short allId = 0;
+    int detects[6]={0};
 
     struct LostObject {
         float posx;
@@ -50,7 +52,6 @@ private:
         unsigned short time;
     };
     
-    int detects[6]={0};
     struct Object {
         float posx;
         float posy;
@@ -59,6 +60,13 @@ private:
         int class_id;
         std::string hash;
     };
+
+    struct box {
+        float x;
+        float y;
+        float w;
+        float h;
+    }
 
     std::unordered_map<int,Object> objects;
     std::unordered_map<int,LostObject> lostObjects;
@@ -87,20 +95,13 @@ private:
     }
 
 public:
-    void track(mat_cv* mat, detection* dets, int num, float thresh, image** alphabet, int classes, int ext_output) {
-        Mat img = *(Mat*)mat;
+    void track(Mat *mat, PyObject* bbox, PyObject* scores, PyObject* classes, int num, PyObject* thresh) {
+        Mat img = mat;
         if (img.empty()) return;
         for (int i = 0; i < num; i++) {
-            int class_id = -1;
-            int max_val = 0;
-            for (int j = 0; j < classes; j++) {
-                if (dets[i].prob[j] > thresh && dets[i].prob[j] > max_val) {
-                    class_id = j;
-                    max_val = dets[i].prob[j];
-                }
-            }            
-            if(class_id!=-1){
-                box b = dets[i].bbox;
+            if(PyFloat_AsDouble(PyList_GetItem(PyList_GetItem(bbox, i),3))!=0.0 && PyFloat_AsDouble(PyList_GetItem(thresh, i))<=PyFloat_AsDouble(PyList_GetItem(scores, PyLong_AsLong(PyList_GetItem(classes, i))))){
+                box b;
+                
                 if (std::isnan(b.w) || std::isinf(b.w)) b.w = 0.5;
                 if (std::isnan(b.h) || std::isinf(b.h)) b.h = 0.5;
                 if (std::isnan(b.x) || std::isinf(b.x)) b.x = 0.5;
@@ -122,7 +123,7 @@ public:
                 r.height=img.rows-r.y-1;
                 }
                 Mat cr = img(r);
-                std::string hash = hashImage(cr);
+                Mat hash = hashImage(&cr);
                 int temp;
                 int min = -1;
                 int id = -1;
