@@ -94,8 +94,14 @@ private:
     }
 
 public:
-    Tracking(short num, PyObject* ){
-
+    Tracking(short num, PyObject* threshs, unsigned short d_time, unsigned short a_time){
+        for (short i = 0; i < (int)PyList_Size(threshs); i++){
+            thresh.push_back(PyFloat_AsDouble(PyList_GetItem(threshs, i)));
+            detects.push_back(0);
+        }
+        epf = num;
+        del_time = d_time;
+        add_time = a_time;
     }
 
     void track(Mat *img, PyObject* bbox, PyObject* scores, PyObject* classes) {
@@ -111,50 +117,51 @@ public:
             float y = PyFloat_AsDouble(PyList_GetItem(PyList_GetItem(bbox, i), 1));
             short class_id = PyLong_AsLong(PyList_GetItem(classes, i));
 
-            if(thresh[class_id] > PyFloat_AsDouble(PyList_GetItem(scores, i))){ break; }
-            /*if (std::isnan(b.w) || std::isinf(b.w)) b.w = 0.5;
-            if (std::isnan(b.h) || std::isinf(b.h)) b.h = 0.5;
-            if (std::isnan(b.x) || std::isinf(b.x)) b.x = 0.5;
-            if (std::isnan(b.y) || std::isinf(b.y)) b.y = 0.5;
-            b.w = (b.w < 1) ? b.w : 1;
-            b.h = (b.h < 1) ? b.h : 1;
-            b.x = (b.x < 1) ? b.x : 1;
-            b.y = (b.y < 1) ? b.y : 1;*/
+            if(thresh[class_id] > PyFloat_AsDouble(PyList_GetItem(scores, i))){
+                /*if (std::isnan(b.w) || std::isinf(b.w)) b.w = 0.5;
+                if (std::isnan(b.h) || std::isinf(b.h)) b.h = 0.5;
+                if (std::isnan(b.x) || std::isinf(b.x)) b.x = 0.5;
+                if (std::isnan(b.y) || std::isinf(b.y)) b.y = 0.5;
+                b.w = (b.w < 1) ? b.w : 1;
+                b.h = (b.h < 1) ? b.h : 1;
+                b.x = (b.x < 1) ? b.x : 1;
+                b.y = (b.y < 1) ? b.y : 1;*/
 
-            Rect r;
-            r.x = int(x*img.cols);
-            r.y = int(y*img.rows);
-            r.width = int(w*img.cols);
-            r.height = int(h*img.rows);
+                Rect r;
+                r.x = int(x*img.cols);
+                r.y = int(y*img.rows);
+                r.width = int(w*img.cols);
+                r.height = int(h*img.rows);
 
-            int temp;
-            int min = -1;
-            short id = -1;
-            Mat hash = hashImage(img(r));
-            for (std::pair<short, Object> obj : objects) {
-                if (obj.second.class_id == class_id && abs(x - obj.second.posx) <= w*0.6 && abs(y - obj.second.posy) <= h*0.6) {
-                    temp = (pow((abs(x - obj.second.posx)*img.cols + abs(y - obj.second.posy)*img.rows), 2)) * 10 + compareHash(&hash, &obj.second.hash) * 5;
-                    min = (min == -1) ? temp : min;
-                    if (temp <= min && newObjects.find(obj.first) == newObjects.end()) {
-                        min = temp;
-                        id = obj.first;
+                int temp;
+                int min = -1;
+                short id = -1;
+                Mat hash = hashImage(img(r));
+                for (std::pair<short, Object> obj : objects) {
+                    if (obj.second.class_id == class_id && abs(x - obj.second.posx) <= w*0.6 && abs(y - obj.second.posy) <= h*0.6) {
+                        temp = (pow((abs(x - obj.second.posx)*img.cols + abs(y - obj.second.posy)*img.rows), 2)) * 10 + compareHash(&hash, &obj.second.hash) * 5;
+                        min = (min == -1) ? temp : min;
+                        if (temp <= min && newObjects.find(obj.first) == newObjects.end()) {
+                            min = temp;
+                            id = obj.first;
+                        }
                     }
                 }
-            }
-            if (id == -1) {
-                for (std::pair<short, LostObject> obj : lostObjects) {
-                    if (class_id == obj.second.class_id && compareHash(&hash, &obj.second.hash) < 25 && abs(x - obj.second.posx) + abs(y - obj.second.posy) < 0.03) {
-                        id = obj.first;
-                        lostObjects.erase(obj.first);
-                        break;
+                if (id == -1) {
+                    for (std::pair<short, LostObject> obj : lostObjects) {
+                        if (class_id == obj.second.class_id && compareHash(&hash, &obj.second.hash) < 25 && abs(x - obj.second.posx) + abs(y - obj.second.posy) < 0.03) {
+                            id = obj.first;
+                            lostObjects.erase(obj.first);
+                            break;
+                        }
                     }
                 }
+                if (id == -1) {
+                    id = allId + 1;
+                    allId +=1;
+                }
+                newObjects.insert({id, {x, y, w, h, class_id, hash}});            
             }
-            if (id == -1) {
-                id = allId + 1;
-                allId +=1;
-            }
-            newObjects.insert({id, {x, y, w, h, class_id, hash}});            
         }
 
         for (std::pair<short, Object> obj : objects) {
