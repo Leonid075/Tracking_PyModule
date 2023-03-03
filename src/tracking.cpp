@@ -40,10 +40,14 @@ using namespace cv;
 
 class Tracking: public PyObject {
 private:
+    std::vector<short> detects;
+    std::vector<float> thresh;
+    short epf; //elemets per frame
+    unsigned short del_time;
+    unsigned short add_time;
+
     unsigned short frame = 0;
     short allId = 0;
-
-    short detects[6]={0}; //vector
 
     struct LostObject {
         float posx;
@@ -90,16 +94,18 @@ private:
     }
 
 public:
-    Tracking()
+    Tracking(short num, PyObject* ){
 
-    void track(Mat *img, PyObject* bbox, PyObject* scores, PyObject* classes, short num, float* thresh) {
+    }
+
+    void track(Mat *img, PyObject* bbox, PyObject* scores, PyObject* classes) {
         if (img.empty()) return;
         std::unordered_map<short, Object> newObjects;
-        for (short i = 0; i < num; i++) {
+        for (short i = 0; i < epf; i++) {
             float w = PyFloat_AsDouble(PyList_GetItem(PyList_GetItem(bbox, i), 3));
             float h = PyFloat_AsDouble(PyList_GetItem(PyList_GetItem(bbox, i), 2));
 
-            if(w<0.02 || h<0.02){ break; }
+            if(w < 0.02 || h < 0.02){ break; }
             
             float x = PyFloat_AsDouble(PyList_GetItem(PyList_GetItem(bbox, i), 0));
             float y = PyFloat_AsDouble(PyList_GetItem(PyList_GetItem(bbox, i), 1));
@@ -116,10 +122,10 @@ public:
             b.y = (b.y < 1) ? b.y : 1;*/
 
             Rect r;
-            r.x=int(x*img.cols);
-            r.y=int(y*img.rows);
-            r.width=int(w*img.cols);
-            r.height=int(h*img.rows);
+            r.x = int(x*img.cols);
+            r.y = int(y*img.rows);
+            r.width = int(w*img.cols);
+            r.height = int(h*img.rows);
 
             int temp;
             int min = -1;
@@ -127,9 +133,9 @@ public:
             Mat hash = hashImage(img(r));
             for (std::pair<short, Object> obj : objects) {
                 if (obj.second.class_id == class_id && abs(x - obj.second.posx) <= w*0.6 && abs(y - obj.second.posy) <= h*0.6) {
-                    temp = (pow((abs(x - obj.second.posx)*img.cols + abs(y - obj.second.posy)*img.rows),2)) * 10 + compareHash(&hash, &obj.second.hash) * 5;
+                    temp = (pow((abs(x - obj.second.posx)*img.cols + abs(y - obj.second.posy)*img.rows), 2)) * 10 + compareHash(&hash, &obj.second.hash) * 5;
                     min = (min == -1) ? temp : min;
-                    if (temp <= min && newObjects.find(obj.first)==newObjects.end()) {
+                    if (temp <= min && newObjects.find(obj.first) == newObjects.end()) {
                         min = temp;
                         id = obj.first;
                     }
@@ -137,7 +143,7 @@ public:
             }
             if (id == -1) {
                 for (std::pair<short, LostObject> obj : lostObjects) {
-                    if (class_id == obj.second.class_id && compareHash(&hash, &obj.second.hash)<25 && abs(x - obj.second.posx) + abs(y - obj.second.posy) < 0.03) {
+                    if (class_id == obj.second.class_id && compareHash(&hash, &obj.second.hash) < 25 && abs(x - obj.second.posx) + abs(y - obj.second.posy) < 0.03) {
                         id = obj.first;
                         lostObjects.erase(obj.first);
                         break;
@@ -145,29 +151,29 @@ public:
                 }
             }
             if (id == -1) {
-                id=allId+1;
-                allId+=1;
+                id = allId + 1;
+                allId +=1;
             }
             newObjects.insert({id, {x, y, w, h, class_id, hash}});            
         }
 
-        for (std::pair<short,Object> obj : objects) {
-            if (newObjects.find(obj.first)!=newObjects.end()) {
+        for (std::pair<short, Object> obj : objects) {
+            if (newObjects.find(obj.first) != newObjects.end()) {
                 lostObjects.insert({ obj.first, {obj.second.posx, obj.second.posy, obj.second.class_id, obj.second.hash, 0} });
             }
-            if (timer.find(obj.first)!=timer.end()){
-                timer.insert({obj.first,0});
+            if (timer.find(obj.first) != timer.end()){
+                timer.insert({obj.first, 0});
             }
-            if (timer[obj.first]==20){
-                detects[obj.second.class_id]+=1;
+            if (timer[obj.first] == 20){
+                detects[obj.second.class_id] += 1;
             }
-            timer[obj.first]+=1;
+            timer[obj.first] += 1;
         }
 
         objects=newObjects;
 
         std::list<short> delObjects;
-        for (std::pair<short,LostObject> obj : lostObjects) {
+        for (std::pair<short, LostObject> obj : lostObjects) {
             obj.second.time += 1;
             if (obj.second.time == 180) {
                 delObjects.insert(delObjects.end(), obj.first);
