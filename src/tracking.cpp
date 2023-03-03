@@ -105,7 +105,7 @@ public:
             float y = PyFloat_AsDouble(PyList_GetItem(PyList_GetItem(bbox, i), 1));
             short class_id = PyLong_AsLong(PyList_GetItem(classes, i));
 
-            if( thresh[class_id] > PyFloat_AsDouble(PyList_GetItem(scores, i)) ){ break; }
+            if(thresh[class_id] > PyFloat_AsDouble(PyList_GetItem(scores, i))){ break; }
             /*if (std::isnan(b.w) || std::isinf(b.w)) b.w = 0.5;
             if (std::isnan(b.h) || std::isinf(b.h)) b.h = 0.5;
             if (std::isnan(b.x) || std::isinf(b.x)) b.x = 0.5;
@@ -121,11 +121,11 @@ public:
             r.width=int(w*img.cols);
             r.height=int(h*img.rows);
 
-            Mat hash = hashImage(img(r));
             int temp;
             int min = -1;
             short id = -1;
-            for (std::pair<short,Object> obj : objects) {
+            Mat hash = hashImage(img(r));
+            for (std::pair<short, Object> obj : objects) {
                 if (obj.second.class_id == class_id && abs(x - obj.second.posx) <= w*0.6 && abs(y - obj.second.posy) <= h*0.6) {
                     temp = (pow((abs(x - obj.second.posx)*img.cols + abs(y - obj.second.posy)*img.rows),2)) * 10 + compareHash(&hash, &obj.second.hash) * 5;
                     min = (min == -1) ? temp : min;
@@ -136,7 +136,7 @@ public:
                 }
             }
             if (id == -1) {
-                for (std::pair<short,LostObject> obj : lostObjects) {
+                for (std::pair<short, LostObject> obj : lostObjects) {
                     if (class_id == obj.second.class_id && compareHash(&hash, &obj.second.hash)<25 && abs(x - obj.second.posx) + abs(y - obj.second.posy) < 0.03) {
                         id = obj.first;
                         lostObjects.erase(obj.first);
