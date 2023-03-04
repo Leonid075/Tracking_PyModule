@@ -45,17 +45,11 @@ private:
     short epf; //elemets per frame
     unsigned short del_time;
     unsigned short add_time;
+    short hash_size = 8;
+    float shift = 0.6;
 
     unsigned short frame = 0;
     short allId = 0;
-
-    struct LostObject {
-        float posx;
-        float posy;
-        short class_id;
-        Mat hash;
-        unsigned short time;
-    };
     
     struct Object {
         float posx;
@@ -67,13 +61,22 @@ private:
         unsigned short time;
     };
 
+    struct LostObject {
+        float posx;
+        float posy;
+        short class_id;
+        Mat hash;
+        unsigned short lost_time;
+        unsigned short time;
+    };
+
     std::unordered_map<short, short> timer;
     std::unordered_map<short, Object> objects;
     std::unordered_map<short, LostObject> lostObjects;
 
     Mat hashImage(Mat image) {
         Mat img;
-        resize(image, img, Size(8, 8), INTER_LINEAR);
+        resize(image, img, Size(hash_size, hash_size), INTER_LINEAR);
         cvtColor(img, image, COLOR_BGR2GRAY);
         threshold(image, img, sum(mean(image))[0], 255, 0);
         return img;
@@ -81,8 +84,8 @@ private:
 
     short compareHash(Mat* hash1, Mat* hash2) {
         int diff = 0;
-        for (short i = 0; i < 8; i++) {
-            for (short j = 0; j < 8; j++) {
+        for (short i = 0; i < hash_size; i++) {
+            for (short j = 0; j < hash_size; j++) {
                 auto val1 = hash1.at<uchar>(i, j);
                 auto val2 = hash2.at<uchar>(i, j);
                 if (val1 != val2) {
@@ -94,7 +97,7 @@ private:
     }
 
 public:
-    Tracking(short num, PyObject* threshs, unsigned short d_time, unsigned short a_time){
+    Tracking(PyObject* num, PyObject* threshs, PyObject* d_time, PyObject* a_time){
         for (short i = 0; i < (int)PyList_Size(threshs); i++){
             thresh.push_back(PyFloat_AsDouble(PyList_GetItem(threshs, i)));
             detects.push_back(0);
@@ -108,16 +111,19 @@ public:
         if (img.empty()) return;
         std::unordered_map<short, Object> newObjects;
         for (short i = 0; i < epf; i++) {
-            float w = PyFloat_AsDouble(PyList_GetItem(PyList_GetItem(bbox, i), 3));
-            float h = PyFloat_AsDouble(PyList_GetItem(PyList_GetItem(bbox, i), 2));
+            float w = PyFloat_AsDouble(PyList_GetItem(PyList_GetItem(bbox, i), 1));
+            float h = PyFloat_AsDouble(PyList_GetItem(PyList_GetItem(bbox, i), 3));
 
             if(w < 0.02 || h < 0.02){ break; }
-            
-            float x = PyFloat_AsDouble(PyList_GetItem(PyList_GetItem(bbox, i), 0));
-            float y = PyFloat_AsDouble(PyList_GetItem(PyList_GetItem(bbox, i), 1));
+
             short class_id = PyLong_AsLong(PyList_GetItem(classes, i));
 
-            if(thresh[class_id] > PyFloat_AsDouble(PyList_GetItem(scores, i))){
+            if(thresh[class_id] > PyFloat_AsDouble(PyList_GetItem(scores, i))){            
+                float x = PyFloat_AsDouble(PyList_GetItem(PyList_GetItem(bbox, i), 0));
+                float y = PyFloat_AsDouble(PyList_GetItem(PyList_GetItem(bbox, i), 2));
+                w-=x;
+                h-=y;
+
                 /*if (std::isnan(b.w) || std::isinf(b.w)) b.w = 0.5;
                 if (std::isnan(b.h) || std::isinf(b.h)) b.h = 0.5;
                 if (std::isnan(b.x) || std::isinf(b.x)) b.x = 0.5;
@@ -133,12 +139,12 @@ public:
                 r.width = int(w*img.cols);
                 r.height = int(h*img.rows);
 
-                int temp;
-                int min = -1;
-                short id = -1;
                 Mat hash = hashImage(img(r));
+                short id = -1;
+                int min = -1;
+                int temp;
                 for (std::pair<short, Object> obj : objects) {
-                    if (obj.second.class_id == class_id && abs(x - obj.second.posx) <= w*0.6 && abs(y - obj.second.posy) <= h*0.6) {
+                    if (obj.second.class_id == class_id && abs(x - obj.second.posx) <= w*shift && abs(y - obj.second.posy) <= h*shift) {
                         temp = (pow((abs(x - obj.second.posx)*img.cols + abs(y - obj.second.posy)*img.rows), 2)) * 10 + compareHash(&hash, &obj.second.hash) * 5;
                         min = (min == -1) ? temp : min;
                         if (temp <= min && newObjects.find(obj.first) == newObjects.end()) {
@@ -178,7 +184,6 @@ public:
         }
 
         objects=newObjects;
-
         std::list<short> delObjects;
         for (std::pair<short, LostObject> obj : lostObjects) {
             obj.second.time += 1;
@@ -189,5 +194,6 @@ public:
         for (short id : delObjects) {
             lostObjects.erase(id);
         }
+        frame ++;
     };
 };
