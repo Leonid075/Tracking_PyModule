@@ -11,6 +11,9 @@
 #include <opencv2/videoio.hpp>
 #include <opencv2/imgcodecs.hpp>
 
+
+using namespace cv;
+
 static PyObject* spam_system(PyObject* self, PyObject* args)
 {
     char* cfg;
@@ -28,7 +31,7 @@ static PyObject* spam_system(PyObject* self, PyObject* args)
     //demo(cfg, weights, thresh, .5, 0, filename, 0, classes, 3, 0, 0, out_filename, -1, dontdraw_bbox, -1, 1, 0, 0, 0, 0, 0, 0);
     //long i = PyLong_AsLong();
     //PyObject* j = PyLong_FromLong(i);
-    cv::Mat img(416, 416, CV_8UC3, (uchar*)PyByteArray_AsString(out));
+    Mat img(416, 416, CV_8UC3, (uchar*)PyByteArray_AsString(out));
     return PyLong_FromLong(123);
 }
 
