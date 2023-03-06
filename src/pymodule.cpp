@@ -11,28 +11,24 @@
 #include <opencv2/videoio.hpp>
 #include <opencv2/imgcodecs.hpp>
 
+#include "tracking.h"
 
 using namespace cv;
 
-static PyObject* spam_system(PyObject* self, PyObject* args)
-{
-    char* cfg;
-    char* datacfg;
-    char* weights;
-    float thresh;
-    char* filename;
-    char* out_filename;
-    int dontdraw_bbox;
+static PyObject* spam_system(PyObject* self, PyObject* args){
     PyObject* out;
-
-
     PyArg_ParseTuple(args, "O|O:ref", &out);
-    //PyArg_ParseTuple(args, "sssfssi", &cfg, &datacfg, &weights, &thresh, &filename, &out_filename, &dontdraw_bbox);
-    //demo(cfg, weights, thresh, .5, 0, filename, 0, classes, 3, 0, 0, out_filename, -1, dontdraw_bbox, -1, 1, 0, 0, 0, 0, 0, 0);
-    //long i = PyLong_AsLong();
-    //PyObject* j = PyLong_FromLong(i);
-    Mat img(416, 416, CV_8UC3, (uchar*)PyByteArray_AsString(out));
     return PyLong_FromLong(123);
+}
+
+static PyObject* new_track(PyObject* self, PyObject* args){
+    short* num;
+    PyObject* img;
+    ushort* d_time;
+    ushort* a_time;
+    PyArg_ParseTuple(args, "iOii", &num, &img, &d_time, &a_time);
+    Tracking tr(*num, img, *d_time, *a_time);
+    return Py_BuildValue("O", &tr);
 }
 
 static PyMethodDef SpamMethods[] = {

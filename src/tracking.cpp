@@ -84,19 +84,21 @@ private:
     }
 
 public:
-    Tracking(PyObject* num, PyObject* threshs, PyObject* d_time, PyObject* a_time){
+    Tracking(short num, PyObject* threshs, ushort d_time, ushort a_time){
         for (short i = 0; i < (int)PyList_Size(threshs); i++){
             thresh.push_back(PyFloat_AsDouble(PyList_GetItem(threshs, i)));
             detects.push_back(0);
         }
-        epf = num;
-        del_time = d_time;
-        add_time = a_time;
+        epf = PyLong_AsLong(num);
+        del_time = PyLong_AsLong(d_time);
+        add_time = PyLong_AsLong(a_time);
     }
 
-    void track(Mat *img, PyObject* bbox, PyObject* scores, PyObject* classes) {
+    void track(PyObject* image, PyObject* bbox, PyObject* scores, PyObject* classes) {
+        Mat img(416, 416, CV_8UC3, (uchar*)PyByteArray_AsString(image));
         if (img.empty()) return;
         std::unordered_map<short, Object> newObjects;
+
         for (short i = 0; i < epf; i++) {
             float w = PyFloat_AsDouble(PyList_GetItem(PyList_GetItem(bbox, i), 1));
             float h = PyFloat_AsDouble(PyList_GetItem(PyList_GetItem(bbox, i), 3));

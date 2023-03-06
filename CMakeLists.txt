@@ -3,8 +3,9 @@ project(Trckinglib)
 
 include_directories(/usr/local/include/opencv4)
 include_directories(/usr/include/python3.10)
+include_directories(./include)
 
-set(SOURCE_LIB src/pymodule.cpp /usr/local/include/opencv4/ /usr/include/python3.10/)
+set(SOURCE_LIB src/pymodule.cpp)
 
 add_library(libpython SHARED IMPORTED)
 set_property(TARGET libpython PROPERTY IMPORTED_LOCATION /usr/lib/x86_64-linux-gnu/libpython3.10.so)
