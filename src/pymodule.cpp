@@ -1,16 +1,15 @@
 ﻿#include <iostream>
 #include <Python.h>
+
 #include <opencv2/core/version.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/imgproc.hpp>
 #include <opencv2/opencv.hpp>
 #include <opencv2/opencv_modules.hpp>
-
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/video/video.hpp>
-
+#include <opencv2/highgui.hpp>
+#include <opencv2/video.hpp>
 #include <opencv2/core/types.hpp>
-#include <opencv2/videoio/videoio.hpp>
-#include <opencv2/imgcodecs/imgcodecs.hpp>
+#include <opencv2/videoio.hpp>
+#include <opencv2/imgcodecs.hpp>
 
 static PyObject* spam_system(PyObject* self, PyObject* args)
 {

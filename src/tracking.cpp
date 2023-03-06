@@ -14,27 +14,14 @@
 #include <Python.h>
 
 #include <opencv2/core/version.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/imgproc.hpp>
 #include <opencv2/opencv.hpp>
 #include <opencv2/opencv_modules.hpp>
-
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/video/video.hpp>
-
-// includes for OpenCV >= 3.x
-#ifndef CV_VERSION_EPOCH
+#include <opencv2/highgui.hpp>
+#include <opencv2/video.hpp>
 #include <opencv2/core/types.hpp>
-#include <opencv2/videoio/videoio.hpp>
-#include <opencv2/imgcodecs/imgcodecs.hpp>
-#endif
-
-// OpenCV includes for OpenCV 2.x
-#ifdef CV_VERSION_EPOCH
-#include <opencv2/highgui/highgui_c.h>
-#include <opencv2/imgproc/imgproc_c.h>
-#include <opencv2/core/types_c.h>
-#include <opencv2/core/version.hpp>
-#endif
+#include <opencv2/videoio.hpp>
+#include <opencv2/imgcodecs.hpp>
 
 using namespace cv;
 
@@ -86,8 +73,8 @@ private:
         int diff = 0;
         for (short i = 0; i < hash_size; i++) {
             for (short j = 0; j < hash_size; j++) {
-                auto val1 = hash1.at<uchar>(i, j);
-                auto val2 = hash2.at<uchar>(i, j);
+                auto val1 = hash1(i, j);
+                auto val2 = hash2(i, j);
                 if (val1 != val2) {
                     diff++;
                 }
