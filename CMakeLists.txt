@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(Trckinglib)
+project(Trackinglib)
 
 include_directories(/usr/local/include/opencv4)
 include_directories(/usr/include/python3.10)
