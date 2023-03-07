@@ -6,6 +6,7 @@ include_directories(/usr/include/python3.10)
 include_directories(./include)
 
 set(SOURCE_LIB src/pymodule.cpp)
+set(TRACK_SOURCE src/tracking.cpp ./include/tracking.h)
 
 add_library(libpython SHARED IMPORTED)
 set_property(TARGET libpython PROPERTY IMPORTED_LOCATION /usr/lib/x86_64-linux-gnu/libpython3.10.so)
@@ -28,6 +29,8 @@ set_property(TARGET libcv_imgcodecs PROPERTY IMPORTED_LOCATION /usr/local/lib/li
 add_library(libcv_videoio SHARED IMPORTED)
 set_property(TARGET libcv_videoio PROPERTY IMPORTED_LOCATION /usr/local/lib/libopencv_videoio.so)
 
-add_library(pymodule SHARED ${SOURCE_LIB})
+add_library(tracking SHARED ${TRACK_SOURCE})
+target_link_libraries(tracking libpython libcv_core libcv_imgproc libcv_highgui libcv_video libcv_imgcodecs libcv_videoio)
 
-target_link_libraries(pymodule libpython libcv_core libcv_imgproc libcv_highgui libcv_video libcv_imgcodecs libcv_videoio)
+add_library(pymodule SHARED ${SOURCE_LIB})
+target_link_libraries(pymodule libpython tracking)
