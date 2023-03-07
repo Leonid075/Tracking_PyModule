@@ -16,7 +16,7 @@ static PyObject* new_track(PyObject* self, PyObject* args){
     ushort* a_time;
     PyArg_ParseTuple(args, "iOii", &num, &img, &d_time, &a_time);
     Tracking tr(*num, img, *d_time, *a_time);
-    return Py_BuildValue("O", &tr);
+    return PyLong_FromLong(&tr);
 }
 
 static PyMethodDef SpamMethods[] = {
